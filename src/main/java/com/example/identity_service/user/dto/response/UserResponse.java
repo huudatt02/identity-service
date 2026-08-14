@@ -13,7 +13,7 @@ public class UserResponse {
     private UUID id;
     private String fullName;
     private String email;
-    private String phone;
+    private String phoneNumber;
     private boolean enabled;
     private boolean emailVerified;
     private Set<String> roles;
