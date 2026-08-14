@@ -8,6 +8,8 @@ import com.example.identity_service.auth.dto.request.ResetPasswordRequest;
 import com.example.identity_service.auth.dto.response.TokenResponse;
 import com.example.identity_service.auth.jwt.JwtService;
 import com.example.identity_service.email.EmailService;
+import com.example.identity_service.exception.AppException;
+import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.user.dto.request.UserCreateRequest;
 import com.example.identity_service.user.entity.Role;
 import com.example.identity_service.user.entity.User;
@@ -55,12 +57,12 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
         Role userRole =
                 roleRepository
                         .findByName("USER")
-                        .orElseThrow(() -> new IllegalArgumentException("Role not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         UserCreateRequest userCreateRequest = userMapper.toUserCreationRequest(request);
         User user = userService.createUser(userCreateRequest, Set.of(userRole));
         sendVerificationEmail(user);
@@ -69,12 +71,12 @@ public class AuthService {
     public void verifyEmail(String token) {
         String userId = emailVerificationService.getUserId(token);
         if (userId == null) {
-            throw new RuntimeException("Invalid or expired token");
+            throw new AppException(ErrorCode.INVALID_TOKEN);
         }
         User user =
                 userRepository
                         .findById(UUID.fromString(userId))
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         user.setEmailVerified(true);
         userRepository.save(user);
         emailVerificationService.deleteToken(token);
@@ -89,12 +91,12 @@ public class AuthService {
                             new UsernamePasswordAuthenticationToken(
                                     request.getEmail(), request.getPassword()));
         } catch (DisabledException e) {
-            throw new RuntimeException("User account is disabled");
+            throw new AppException(ErrorCode.USER_ACCOUNT_DISABLED);
         }
         User user = (User) authentication.getPrincipal();
         if (!user.isEmailVerified()) {
             sendVerificationEmail(user);
-            throw new RuntimeException("Email not verified. Verification email sent.");
+            throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -117,16 +119,16 @@ public class AuthService {
             throws KeyLengthException, JOSEException, ParseException {
         Jwt jwt = jwtDecoder.decode(request.getRefreshToken());
         if (!"refresh".equals(jwt.getClaimAsString("type"))) {
-            throw new RuntimeException("Invalid token type");
+            throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
         }
         String jti = jwt.getId();
         if (!refreshTokenService.exists(jti)) {
-            throw new RuntimeException("Refresh token not found or expired");
+            throw new AppException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
         }
         User user =
                 userRepository
                         .findById(UUID.fromString(jwt.getSubject()))
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         refreshTokenService.revoke(jti);
         String newAccessToken = jwtService.generateAccessToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
@@ -150,11 +152,11 @@ public class AuthService {
         Jwt jwt = jwtDecoder.decode(accessToken);
         String type = jwt.getClaimAsString("type");
         if (!"access".equals(type)) {
-            throw new RuntimeException("Invalid token type");
+            throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
         }
         String jti = jwt.getId();
         if (jti == null) {
-            throw new RuntimeException("Token does not contain a jti claim");
+            throw new AppException(ErrorCode.MISSING_JTI_CLAIM);
         }
         Duration ttl = Duration.between(Instant.now(), jwt.getExpiresAt());
         tokenBlacklistService.blacklist(jti, ttl);
@@ -164,11 +166,11 @@ public class AuthService {
         Jwt jwt = jwtDecoder.decode(refreshToken);
         String type = jwt.getClaimAsString("type");
         if (!"refresh".equals(type)) {
-            throw new RuntimeException("Invalid token type");
+            throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
         }
         String jti = jwt.getId();
         if (jti == null) {
-            throw new RuntimeException("Token does not contain a jti claim");
+            throw new AppException(ErrorCode.MISSING_JTI_CLAIM);
         }
         refreshTokenService.revoke(jti);
     }
@@ -177,7 +179,7 @@ public class AuthService {
         User user =
                 userRepository
                         .findByEmail(request.getEmail())
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         String token = UUID.randomUUID().toString();
         emailVerificationService.saveToken(token, user.getId());
         String resetLink = "http://localhost:8080/api/auth/reset-password?token=" + token;
@@ -187,14 +189,14 @@ public class AuthService {
     public void resetPassword(ResetPasswordRequest request) {
         String userId = emailVerificationService.getUserId(request.getToken());
         if (userId == null) {
-            throw new RuntimeException("Invalid or expired token");
+            throw new AppException(ErrorCode.USER_ID_NOT_FOUND);
         }
         User user =
                 userRepository
                         .findById(UUID.fromString(userId))
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         if (!user.isEmailVerified()) {
-            throw new RuntimeException("User email is not verified");
+            throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);

@@ -3,6 +3,8 @@ package com.example.identity_service.admin.service;
 import static com.example.identity_service.user.specification.UserSpecification.*;
 
 import com.example.identity_service.admin.dto.request.AdminUserCreateRequest;
+import com.example.identity_service.exception.AppException;
+import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.user.dto.request.UserCreateRequest;
 import com.example.identity_service.user.dto.response.UserResponse;
 import com.example.identity_service.user.entity.Role;
@@ -44,9 +46,8 @@ public class AdminUserService {
                                                 .findByName(roleName)
                                                 .orElseThrow(
                                                         () ->
-                                                                new IllegalArgumentException(
-                                                                        "Role not found: "
-                                                                                + roleName)))
+                                                                new AppException(
+                                                                        ErrorCode.ROLE_NOT_FOUND)))
                         .collect(Collectors.toSet());
         UserCreateRequest userCreateRequest = userMapper.toUserCreationRequest(request);
         userService.createUser(userCreateRequest, roles);
@@ -56,7 +57,7 @@ public class AdminUserService {
         User user =
                 userRepository
                         .findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
@@ -65,10 +66,10 @@ public class AdminUserService {
         User user =
                 userRepository
                         .findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         Set<Role> roles = new HashSet<>(roleRepository.findByNameIn(roleNames));
         if (roles.size() != roleNames.size()) {
-            throw new IllegalArgumentException("One or more roles not found");
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
         }
         user.setRoles(roles);
         userRepository.save(user);
@@ -78,14 +79,14 @@ public class AdminUserService {
         User user =
                 userRepository
                         .findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         user.setEnabled(enabled);
         userRepository.save(user);
     }
 
     public void deleteUser(UUID userId) {
         if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("User not found");
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
         userRepository.deleteById(userId);
     }

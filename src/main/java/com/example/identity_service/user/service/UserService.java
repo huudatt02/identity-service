@@ -1,5 +1,7 @@
 package com.example.identity_service.user.service;
 
+import com.example.identity_service.exception.AppException;
+import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.user.dto.request.ChangePasswordRequest;
 import com.example.identity_service.user.dto.request.UserCreateRequest;
 import com.example.identity_service.user.dto.request.UserUpdateRequest;
@@ -28,7 +30,7 @@ public class UserService {
 
     public User createUser(UserCreateRequest request, Set<Role> roles) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -42,7 +44,7 @@ public class UserService {
         User user =
                 userRepository
                         .findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         userMapper.updateUser(request, user);
         return userRepository.save(user);
     }
@@ -53,10 +55,10 @@ public class UserService {
         User user =
                 userRepository
                         .findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Old password is incorrect");
+            throw new AppException(ErrorCode.OLD_PASSWORD_INCORRECT);
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         return userRepository.save(user);
@@ -66,7 +68,7 @@ public class UserService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UUID userId = UUID.fromString(authentication.getName());
         if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("User not found");
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
         userRepository.deleteById(userId);
     }

@@ -1,6 +1,8 @@
 package com.example.identity_service.auth.jwt;
 
 import com.example.identity_service.auth.service.TokenBlacklistService;
+import com.example.identity_service.exception.AppException;
+import com.example.identity_service.exception.ErrorCode;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -41,11 +43,11 @@ public class CustomJwtDecoder implements JwtDecoder {
             String jti = jwt.getId();
 
             if (jti == null) {
-                throw new JwtException("Missing jti claim");
+                throw new AppException(ErrorCode.MISSING_JTI_CLAIM);
             }
 
             if (tokenBlacklistService.isBlacklisted(jti)) {
-                throw new JwtException("Token has been revoked");
+                throw new AppException(ErrorCode.TOKEN_BLACKLISTED);
             }
         }
 

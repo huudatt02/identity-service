@@ -1,5 +1,8 @@
 package com.example.identity_service.email;
 
+import com.example.identity_service.exception.AppException;
+import com.example.identity_service.exception.ErrorCode;
+
 import jakarta.mail.internet.MimeMessage;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +34,7 @@ public class EmailService {
             helper.setText(htmlContent, true);
             mailSender.send(message);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send verification email", e);
+            throw new AppException(ErrorCode.FAILED_TO_SEND_EMAIL);
         }
     }
 
@@ -49,7 +52,7 @@ public class EmailService {
             helper.setText(htmlContent, true);
             mailSender.send(message);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send password reset email", e);
+            throw new AppException(ErrorCode.FAILED_TO_SEND_EMAIL);
         }
     }
 }

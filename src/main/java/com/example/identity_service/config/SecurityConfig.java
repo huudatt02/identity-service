@@ -1,6 +1,8 @@
 package com.example.identity_service.config;
 
 import com.example.identity_service.auth.jwt.CustomJwtDecoder;
+import com.example.identity_service.exception.AppException;
+import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -60,7 +62,7 @@ public class SecurityConfig {
         return email ->
                 userRepository
                         .findByEmail(email)
-                        .orElseThrow(() -> new RuntimeException("User not found: " + email));
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
     @Bean
