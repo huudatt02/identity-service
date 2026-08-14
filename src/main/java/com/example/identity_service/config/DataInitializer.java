@@ -55,6 +55,8 @@ public class DataInitializer {
         admin.setFullName("Administrator");
         admin.setPhoneNumber("0338851230");
         admin.setPassword(passwordEncoder.encode("admin123"));
+        admin.setEnabled(true);
+        admin.setEmailVerified(true);
         admin.setRoles(Set.of(adminRole));
         userRepository.save(admin);
     }
