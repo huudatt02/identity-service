@@ -50,7 +50,7 @@ public class User implements UserDetails {
     private boolean enabled = true;
 
     @Column(nullable = false)
-    private boolean verified = false;
+    private boolean emailVerified = false;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
