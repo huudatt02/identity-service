@@ -34,7 +34,7 @@ public class EmailService {
             helper.setText(htmlContent, true);
             mailSender.send(message);
         } catch (Exception e) {
-            throw new AppException(ErrorCode.FAILED_TO_SEND_EMAIL);
+            throw new AppException(ErrorCode.FAILED_SEND_EMAIL);
         }
     }
 
@@ -52,7 +52,7 @@ public class EmailService {
             helper.setText(htmlContent, true);
             mailSender.send(message);
         } catch (Exception e) {
-            throw new AppException(ErrorCode.FAILED_TO_SEND_EMAIL);
+            throw new AppException(ErrorCode.FAILED_SEND_EMAIL);
         }
     }
 }

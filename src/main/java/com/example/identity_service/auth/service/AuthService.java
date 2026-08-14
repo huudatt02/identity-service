@@ -91,7 +91,7 @@ public class AuthService {
                             new UsernamePasswordAuthenticationToken(
                                     request.getEmail(), request.getPassword()));
         } catch (DisabledException e) {
-            throw new AppException(ErrorCode.USER_ACCOUNT_DISABLED);
+            throw new AppException(ErrorCode.USER_NOT_ENABLED);
         }
         User user = (User) authentication.getPrincipal();
         if (!user.isEmailVerified()) {
