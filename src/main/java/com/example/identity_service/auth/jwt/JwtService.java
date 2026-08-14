@@ -38,7 +38,6 @@ public class JwtService {
 
     public String generateAccessToken(User user) throws KeyLengthException, JOSEException {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
-
         List<String> roles =
                 user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
 
@@ -60,7 +59,6 @@ public class JwtService {
 
     public String generateRefreshToken(User user) throws KeyLengthException, JOSEException {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
-
         JWTClaimsSet claimsSet =
                 new JWTClaimsSet.Builder()
                         .subject(user.getId().toString())

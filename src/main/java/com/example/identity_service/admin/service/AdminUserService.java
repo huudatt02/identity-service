@@ -49,6 +49,7 @@ public class AdminUserService {
                                                                 new AppException(
                                                                         ErrorCode.ROLE_NOT_FOUND)))
                         .collect(Collectors.toSet());
+
         UserCreateRequest userCreateRequest = userMapper.toUserCreationRequest(request);
         userService.createUser(userCreateRequest, roles);
     }
@@ -58,6 +59,7 @@ public class AdminUserService {
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
@@ -67,6 +69,7 @@ public class AdminUserService {
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         Set<Role> roles = new HashSet<>(roleRepository.findByNameIn(roleNames));
         if (roles.size() != roleNames.size()) {
             throw new AppException(ErrorCode.ROLE_NOT_FOUND);
@@ -80,6 +83,7 @@ public class AdminUserService {
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         user.setEnabled(enabled);
         userRepository.save(user);
     }
@@ -88,11 +92,13 @@ public class AdminUserService {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
+
         userRepository.deleteById(userId);
     }
 
     public Page<UserResponse> searchUsers(
             String search, String role, Boolean enabled, Pageable pageable) {
+
         Specification<User> specification =
                 Specification.allOf(search(search), hasRole(role), hasEnabled(enabled));
         return userRepository.findAll(specification, pageable).map(userMapper::toUserResponse);

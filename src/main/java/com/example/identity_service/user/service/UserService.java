@@ -29,29 +29,36 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public User createUser(UserCreateRequest request, Set<Role> roles) {
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
+
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRoles(roles);
+
         return userRepository.save(user);
     }
 
     public User updateUser(UserUpdateRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UUID userId = UUID.fromString(authentication.getName());
+
         User user =
                 userRepository
                         .findById(userId)
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         userMapper.updateUser(request, user);
+
         return userRepository.save(user);
     }
 
     public User changePassword(ChangePasswordRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UUID userId = UUID.fromString(authentication.getName());
+
         User user =
                 userRepository
                         .findById(userId)
@@ -60,16 +67,20 @@ public class UserService {
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new AppException(ErrorCode.OLD_PASSWORD_INCORRECT);
         }
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
         return userRepository.save(user);
     }
 
     public void deleteUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UUID userId = UUID.fromString(authentication.getName());
+
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
+
         userRepository.deleteById(userId);
     }
 }

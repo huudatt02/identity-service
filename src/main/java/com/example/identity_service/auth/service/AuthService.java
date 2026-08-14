@@ -59,10 +59,12 @@ public class AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
+
         Role userRole =
                 roleRepository
                         .findByName("USER")
                         .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+
         UserCreateRequest userCreateRequest = userMapper.toUserCreationRequest(request);
         User user = userService.createUser(userCreateRequest, Set.of(userRole));
         sendVerificationEmail(user);
@@ -70,13 +72,16 @@ public class AuthService {
 
     public void verifyEmail(String token) {
         String userId = emailVerificationService.getUserId(token);
+
         if (userId == null) {
             throw new AppException(ErrorCode.INVALID_TOKEN);
         }
+
         User user =
                 userRepository
                         .findById(UUID.fromString(userId))
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         user.setEmailVerified(true);
         userRepository.save(user);
         emailVerificationService.deleteToken(token);
@@ -84,7 +89,9 @@ public class AuthService {
 
     public TokenResponse login(LoginRequest request)
             throws KeyLengthException, JOSEException, ParseException {
+
         Authentication authentication;
+
         try {
             authentication =
                     authenticationManager.authenticate(
@@ -93,18 +100,23 @@ public class AuthService {
         } catch (DisabledException e) {
             throw new AppException(ErrorCode.USER_NOT_ENABLED);
         }
+
         User user = (User) authentication.getPrincipal();
+
         if (!user.isEmailVerified()) {
             sendVerificationEmail(user);
             throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
+
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
+
         SignedJWT signedJWT = SignedJWT.parse(refreshToken);
         String jti = signedJWT.getJWTClaimsSet().getJWTID();
         Instant expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime().toInstant();
         Duration ttl = Duration.between(Instant.now(), expirationTime);
         refreshTokenService.store(jti, user.getId().toString(), ttl);
+
         return TokenResponse.builder().accessToken(accessToken).refreshToken(refreshToken).build();
     }
 
@@ -117,26 +129,35 @@ public class AuthService {
 
     public TokenResponse refreshToken(RefreshTokenRequest request)
             throws KeyLengthException, JOSEException, ParseException {
+
         Jwt jwt = jwtDecoder.decode(request.getRefreshToken());
+
         if (!"refresh".equals(jwt.getClaimAsString("type"))) {
             throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
         }
+
         String jti = jwt.getId();
+
         if (!refreshTokenService.exists(jti)) {
             throw new AppException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
         }
+
         User user =
                 userRepository
                         .findById(UUID.fromString(jwt.getSubject()))
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         refreshTokenService.revoke(jti);
+
         String newAccessToken = jwtService.generateAccessToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
+
         SignedJWT signedJWT = SignedJWT.parse(newRefreshToken);
         String newJti = signedJWT.getJWTClaimsSet().getJWTID();
         Instant expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime().toInstant();
         Duration ttl = Duration.between(Instant.now(), expirationTime);
         refreshTokenService.store(newJti, user.getId().toString(), ttl);
+
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
@@ -151,13 +172,17 @@ public class AuthService {
     private void blacklistAccessToken(String accessToken) {
         Jwt jwt = jwtDecoder.decode(accessToken);
         String type = jwt.getClaimAsString("type");
+
         if (!"access".equals(type)) {
             throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
         }
+
         String jti = jwt.getId();
+
         if (jti == null) {
             throw new AppException(ErrorCode.MISSING_JTI_CLAIM);
         }
+
         Duration ttl = Duration.between(Instant.now(), jwt.getExpiresAt());
         tokenBlacklistService.blacklist(jti, ttl);
     }
@@ -165,13 +190,17 @@ public class AuthService {
     private void revokeRefreshToken(String refreshToken) {
         Jwt jwt = jwtDecoder.decode(refreshToken);
         String type = jwt.getClaimAsString("type");
+
         if (!"refresh".equals(type)) {
             throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
         }
+
         String jti = jwt.getId();
+
         if (jti == null) {
             throw new AppException(ErrorCode.MISSING_JTI_CLAIM);
         }
+
         refreshTokenService.revoke(jti);
     }
 
@@ -180,6 +209,7 @@ public class AuthService {
                 userRepository
                         .findByEmail(request.getEmail())
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         String token = UUID.randomUUID().toString();
         emailVerificationService.saveToken(token, user.getId());
         String resetLink = "http://localhost:8080/api/auth/reset-password?token=" + token;
@@ -188,16 +218,20 @@ public class AuthService {
 
     public void resetPassword(ResetPasswordRequest request) {
         String userId = emailVerificationService.getUserId(request.getToken());
+
         if (userId == null) {
             throw new AppException(ErrorCode.USER_ID_NOT_FOUND);
         }
+
         User user =
                 userRepository
                         .findById(UUID.fromString(userId))
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
         if (!user.isEmailVerified()) {
             throw new AppException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         emailVerificationService.deleteToken(request.getToken());

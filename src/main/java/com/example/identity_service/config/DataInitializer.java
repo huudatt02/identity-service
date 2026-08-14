@@ -43,13 +43,16 @@ public class DataInitializer {
 
     private void createAdminIfNotExists() {
         String email = "admin@gmail.com";
+
         if (userRepository.existsByEmail(email)) {
             return;
         }
+
         Role adminRole =
                 roleRepository
                         .findByName("ADMIN")
                         .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+
         User admin = new User();
         admin.setEmail(email);
         admin.setFullName("Administrator");

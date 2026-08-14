@@ -39,6 +39,7 @@ public class AdminUserController {
             @RequestParam(required = false) String role,
             @RequestParam(required = false) Boolean enabled,
             @PageableDefault(size = 20, sort = "fullName") Pageable pageable) {
+
         return ResponseEntity.ok(adminUserService.searchUsers(search, role, enabled, pageable));
     }
 
@@ -51,6 +52,7 @@ public class AdminUserController {
     @PatchMapping("/{userId}/password")
     public ResponseEntity<Void> changePassword(
             @PathVariable UUID userId, @RequestBody String newPassword) {
+
         adminUserService.changePassword(userId, newPassword);
         return ResponseEntity.noContent().build();
     }
@@ -58,6 +60,7 @@ public class AdminUserController {
     @PostMapping("/{userId}/roles")
     public ResponseEntity<Void> updateRoles(
             @PathVariable UUID userId, @RequestBody Set<String> roleNames) {
+
         adminUserService.updateRoles(userId, roleNames);
         return ResponseEntity.noContent().build();
     }
@@ -65,6 +68,7 @@ public class AdminUserController {
     @PatchMapping("/{userId}/status")
     public ResponseEntity<Void> updateUserStatus(
             @PathVariable UUID userId, @RequestBody boolean enabled) {
+
         adminUserService.updateUserStatus(userId, enabled);
         return ResponseEntity.noContent().build();
     }

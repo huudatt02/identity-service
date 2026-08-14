@@ -38,23 +38,25 @@ public class AuthController {
     }
 
     @GetMapping("/verify-email")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
-        return ResponseEntity.ok("Email verified successfully");
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request)
             throws KeyLengthException, JOSEException, ParseException {
 
-        return ResponseEntity.ok(authService.login(request));
+        TokenResponse tokenResponse = authService.login(request);
+        return ResponseEntity.ok(tokenResponse);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refreshToken(@RequestBody RefreshTokenRequest request)
             throws KeyLengthException, JOSEException, ParseException {
 
-        return ResponseEntity.ok(authService.refreshToken(request));
+        TokenResponse tokenResponse = authService.refreshToken(request);
+        return ResponseEntity.ok(tokenResponse);
     }
 
     @PostMapping("/logout")
@@ -65,7 +67,6 @@ public class AuthController {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new IllegalArgumentException("Invalid Authorization header");
         }
-
         String accessToken = authorizationHeader.substring(7);
         authService.logout(accessToken, request.getRefreshToken());
         return ResponseEntity.noContent().build();
